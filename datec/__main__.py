@@ -5,7 +5,8 @@ import datetime
 
 import datec
 
-if __name__ == '__main__':
+
+def main():
     dt = datetime.datetime.now()
     for cmd in sys.argv[1:]:
         if cmd == '-h':
@@ -29,3 +30,7 @@ datetime is printed in ISO YYYY-MM-DDTHH:MM:SS.ffffff format.
             sys.exit(0)
         dt = dt + datec.parse(cmd.lower())
     print(dt.isoformat())
+
+
+if __name__ == '__main__':
+    main()

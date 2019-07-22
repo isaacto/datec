@@ -5,7 +5,7 @@ with open('README.md', 'r') as fh:
 
 setuptools.setup(
     name='datec-isaacto',
-    version='0.1',
+    version='0.1.1',
     author='Isaac To',
     author_email='isaac.to@gmail.com',
     description='Date Command',
