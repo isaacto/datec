@@ -64,7 +64,7 @@ you get 2020-06-30.
 This library is grown out of frustration that it is tedious to have a
 shell script or program to get a datetime like "the next 6pm from now"
 or "the next 3rd of any month from two days ago".  With this module
-they can be specified like "+1x18:00:00" and "-2day +1x--3"
+they can be specified like "+1x18:00:00.0" and "-2day +1x--3"
 respectively.  In the expected use cases, counts are small numbers.
 So the library is not always efficient (at times we just loop "count"
 times to step forward or backward).  Whenever it is simple to do so,
@@ -90,6 +90,21 @@ class ParseError(ValueError):
 
 
 class Period:
+    """Represent a command that shift a number of period
+
+    A period may be a year, month, week, day, hour, minute or second,
+    which is the string to be used in the period argument.  If you
+    shift by month/year and it ends up into an invalid date, the
+    result is "truncated" back to the previous valid day.  Shifting a
+    non-integer number of periods is supported except for months and
+    years.
+
+    Args:
+
+        count (float): The number of periods to shift
+        period (str): The period
+
+    """
     def __init__(self, count, period):
         assert period in ('year', 'month', 'week', 'day',
                           'hour', 'minute', 'second')
@@ -108,6 +123,17 @@ class Period:
 
     @classmethod
     def parse(cls, cmdstr):
+        """Parse a command string to a Period object
+
+        The command string should be of the form "<N><period>", where
+        <N> is an explicitly signed number, and <period> is a period
+        string (case insensitive).
+
+        Args:
+
+            cmdstr (str): The command string
+
+        """
         match = cls.PARSE_RE.match(cmdstr.lower())
         if not match:
             raise ParseError('Cannot parse string %s' % cmdstr)
@@ -126,8 +152,26 @@ _WEEKDAY_NUM = {'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3,
 
 
 class Weekday:
+    """Represent a command that set or shift by weekday
+
+    A weekday is a number from 0 to 6, representing Sunday, Monday,
+    ..., Friday (the constants SUN, MON, etc. are provided for
+    readability of constant weekdays).  If you set a weekday, by using
+    a zero count, it moves to the weekday of the current week (week
+    always starts on Sunday).  A non-zero (integer) count would
+    instead shift forward or backward by that number of occurrences of
+    that weekday.  If the original date is already that weekday it is
+    not counted as one of those occurrences.
+
+    Args:
+
+        count (int): The number of periods to shift
+        day (int): The weekday
+
+    """
     def __init__(self, count, day):
         self._count = count
+        assert day in range(7)
         self._day = day
         self._drcls = _WEEKDAY_CLS[day]
 
@@ -152,6 +196,18 @@ class Weekday:
 
     @classmethod
     def parse(cls, cmdstr):
+        """Parse a command string to a Weekday object
+
+        The command string should be of the form "<N><weekday>", where
+        <N> is an explicitly signed number or empty string
+        (representing 0), and <weekday> is a weekday 3-letter string
+        like sun, mon, etc (case insensitive).
+
+        Args:
+
+            cmdstr (str): The command string
+
+        """
         match = cls.PARSE_RE.match(cmdstr.lower())
         if not match:
             raise ParseError('Cannot parse string %s' % cmdstr)
@@ -161,6 +217,35 @@ class Weekday:
 
 
 class PartialDate:
+    """Represent a command that set or shift by partial date
+
+    A partial date command specifies a count and the values of some of
+    year, month, day, hour, minute, second and microsecond.  The
+    specified value must be contiguous among the parts above.
+
+    Using a count of 0 sets the specified fields.  It raises an error
+    if the result is an invalid date.
+
+    Using a positive or negative count shift the date forward or
+    backward, and in this case the year must not be specified.  It
+    only counts valid dates.  E.g., you can shift forward by a certain
+    number of Feb 29.  The exception is when setting the month only.
+    In that case, if the result is an invalid date, the date is
+    "truncated" to the last valid date.
+
+    Args:
+
+        count (int): The number of periods to shift
+        year (int): The year number
+        month (int): The month number (1 to 12)
+        day (int): The day number (1 to 31)
+        hour (int): The hour number (0 to 23)
+        minute (int): The minute number (0 to 59)
+        second (int or float): The second number (0 to smaller than 60)
+        microsecond (int): The microsecond number (0 to 999999)
+
+    """
+
     _INVALID_SIG_RE = re.compile('10+1')
 
     def __init__(self, count=0, year=None, month=None, day=None,
@@ -298,12 +383,29 @@ class PartialDate:
     :
     (?P<minute> [0-9]*)
     :
-    (?P<second> [0-9]*(?:\.[0-9]*)?)
+    (?P<second> [0-9]*)
+    (?:\. (?P<microsecond> [0-9]*) )?
     $
     ''', re.X)
 
     @classmethod
     def parse(cls, cmdstr):
+        """Parse a command string to a PartialDate object
+
+        The command string should be of the form
+        "<N>x<year>-<month>-<day>T<hour>:<minute>:<second>.<micro>",
+        where <N> is an explicitly signed number or empty string
+        (representing 0).  To skip the specification of a part use
+        empty string.  If all date parts are not specified the "--T"
+        may be omitted.  If all the time parts are not specified the
+        "T::." may be omitted.  If the microsecond part is not
+        specified the "." part may be omitted.
+
+        Args:
+
+            cmdstr (str): The command string
+
+        """
         match = cls.PARSE_RE1.match(cmdstr.lower())
         if not match:
             match = cls.PARSE_RE2.match(cmdstr)
@@ -311,26 +413,34 @@ class PartialDate:
             raise ParseError('Cannot parse string %s' % cmdstr)
         gdt = match.groupdict()
 
-        def _matchval(key, allow_float=False):
+        def _matchval(key):
             val = gdt.get(key)
             if not val:
                 return None
-            if not allow_float:
-                return int(val)
-            try:
-                return int(val)
-            except ValueError:
-                return float(val)
+            return int(val)
+
+        microsecond = None
+        msval = gdt.get('microsecond')
+        if msval:
+            microsecond = int(msval.ljust(6, '0')[:6])
         return cls(_matchval('count') or 0,
                    _matchval('year'),
                    _matchval('month'),
                    _matchval('day'),
                    _matchval('hour'),
                    _matchval('minute'),
-                   _matchval('second', True),)
+                   _matchval('second'),
+                   microsecond)
 
 
 def parse(cmdstr):
+    """Attempt to parse one of the possible date command
+
+    Args:
+
+        cmdstr (str): The command string
+
+    """
     try:
         return Period.parse(cmdstr)
     except ParseError:

@@ -64,7 +64,7 @@ you get 2020-06-30.
 This library is grown out of frustration that it is tedious to have a
 shell script or program to get a datetime like "the next 6pm from now"
 or "the next 3rd of any month from two days ago".  With this module
-they can be specified like "+1x18:00:00" and "-2day +1x--3"
+they can be specified like "+1x18:00:00.0" and "-2day +1x--3"
 respectively.  In the expected use cases, counts are small numbers.
 So the library is not always efficient (at times we just loop "count"
 times to step forward or backward).  Whenever it is simple to do so,
