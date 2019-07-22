@@ -1,0 +1,2 @@
+# datec
+Python Date Command
