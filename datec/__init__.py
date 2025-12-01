@@ -88,7 +88,7 @@ import dateutil.relativedelta as dr
 
 __metaclass__ = type
 
-__version__ = '0.1'
+__version__ = '0.2'
 
 class ParseError(ValueError):
     """Represent an error in parsing."""
