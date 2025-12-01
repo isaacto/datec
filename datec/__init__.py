@@ -79,16 +79,19 @@ is observed.  Contributions are welcome.
 
 """
 
+import datetime
 import re
+import typing
 
 import dateutil.relativedelta as dr
 
 
 __metaclass__ = type
 
+__version__ = '0.1'
 
 class ParseError(ValueError):
-    pass
+    """Represent an error in parsing."""
 
 
 class Period:
@@ -107,14 +110,15 @@ class Period:
         period (str): The period
 
     """
-    def __init__(self, count, period):
+    def __init__(self, count: float, period: str):
         assert period in ('year', 'month', 'week', 'day',
                           'hour', 'minute', 'second')
         self._count = count
         self._period = period
 
-    def __radd__(self, dt):
-        return dt + dr.relativedelta(**{self._period + 's': self._count})
+    def __radd__(self, dt: datetime.datetime) -> datetime.datetime:
+        return dt + dr.relativedelta(
+            **{self._period + 's': self._count})  # type: ignore
 
     PARSE_RE = re.compile(r'''
     ^
@@ -124,7 +128,7 @@ class Period:
     ''', re.X)
 
     @classmethod
-    def parse(cls, cmdstr):
+    def parse(cls, cmdstr: str) -> 'Period':
         """Parse a command string to a Period object
 
         The command string should be of the form "<N><period>", where
@@ -140,6 +144,7 @@ class Period:
         if not match:
             raise ParseError('Cannot parse string %s' % cmdstr)
         gdt = match.groupdict()
+        cnt: float
         try:
             cnt = int(gdt['count'])
         except Exception:
@@ -171,13 +176,13 @@ class Weekday:
         day (int): The weekday
 
     """
-    def __init__(self, count, day):
+    def __init__(self, count: int, day: int):
         self._count = count
         assert day in range(7)
         self._day = day
         self._drcls = _WEEKDAY_CLS[day]
 
-    def __radd__(self, dt):
+    def __radd__(self, dt: datetime.datetime) -> datetime.datetime:
         if self._count > 0:
             return dt + dr.relativedelta(
                 days=1, weekday=self._drcls(self._count))
@@ -197,7 +202,7 @@ class Weekday:
     ''', re.X)
 
     @classmethod
-    def parse(cls, cmdstr):
+    def parse(cls, cmdstr: str) -> 'Weekday':
         """Parse a command string to a Weekday object
 
         The command string should be of the form "<N><weekday>", where
@@ -250,8 +255,13 @@ class PartialDate:
 
     _INVALID_SIG_RE = re.compile('10+1')
 
-    def __init__(self, count=0, year=None, month=None, day=None,
-                 hour=None, minute=None, second=None, microsecond=None):
+    def __init__(
+        self, count: int = 0, year: typing.Optional[int] = None,
+        month: typing.Optional[int] = None, day: typing.Optional[int] = None,
+        hour: typing.Optional[int] = None, minute: typing.Optional[int] = None,
+        second: typing.Optional[int] = None,
+        microsecond: typing.Optional[int] = None
+    ):
         assert not count or not year, 'Absolute date with non-zero count'
         assert not isinstance(second, float) or \
             microsecond is None, 'Doubly specified microsecond'
@@ -276,7 +286,7 @@ class PartialDate:
         '', 'years', 'months', 'days', 'hours', 'minutes', 'seconds'
     ]
 
-    def __radd__(self, dt):
+    def __radd__(self, dt: datetime.datetime) -> datetime.datetime:
         if self._firstset == -1:
             return dt
         if not(self._count):
@@ -290,7 +300,7 @@ class PartialDate:
             return self._monthshift(dt)
         return self._dayshift(dt)
 
-    def _rset(self, dt):
+    def _rset(self, dt: datetime.datetime) -> datetime.datetime:
         updater = {'year': self._year,
                    'month': self._month,
                    'day': self._day,
@@ -299,9 +309,9 @@ class PartialDate:
                    'second': self._second,
                    'microsecond': self._microsecond}
         updater = {k: v for k, v in updater.items() if v is not None}
-        return dt.replace(**updater)
+        return dt.replace(**updater)  # type: ignore
 
-    def _simpleshift(self, dt):
+    def _simpleshift(self, dt: datetime.datetime) -> datetime.datetime:
         remain = self._count
         ret = self._rset(dt)
         if self._count < 0:
@@ -311,9 +321,9 @@ class PartialDate:
             if ret > dt:
                 remain -= 1
         mod_field = self._FIRSTSET_MOD[self._firstset]
-        return ret + dr.relativedelta(**{mod_field: remain})
+        return ret + dr.relativedelta(**{mod_field: remain})  # type: ignore
 
-    def _dayshift(self, dt):
+    def _dayshift(self, dt: datetime.datetime) -> datetime.datetime:
         # Day specified
         if self._firstset == 2:  # modify month
             shift = dr.relativedelta(months=1 if self._count > 0 else -1)
@@ -346,8 +356,9 @@ class PartialDate:
                 continue
             count -= 1
 
-    def _monthshift(self, dt):
+    def _monthshift(self, dt: datetime.datetime) -> datetime.datetime:
         # Only month specified, shift by month rather than by year
+        assert self._month is not None
         if self._count > 0:
             num_months = self._month - dt.month
             sign = 1
@@ -391,7 +402,7 @@ class PartialDate:
     ''', re.X)
 
     @classmethod
-    def parse(cls, cmdstr):
+    def parse(cls, cmdstr: str) -> 'PartialDate':
         """Parse a command string to a PartialDate object
 
         The command string should be of the form
@@ -415,7 +426,7 @@ class PartialDate:
             raise ParseError('Cannot parse string %s' % cmdstr)
         gdt = match.groupdict()
 
-        def _matchval(key):
+        def _matchval(key: str) -> typing.Optional[int]:
             val = gdt.get(key)
             if not val:
                 return None
@@ -435,7 +446,7 @@ class PartialDate:
                    microsecond)
 
 
-def parse(cmdstr):
+def parse(cmdstr: str) -> typing.Union[Period, Weekday, PartialDate]:
     """Attempt to parse one of the possible date command
 
     Args:

@@ -2,6 +2,8 @@ mypy
 pylint
 pytest
 pytest-cov
+python-dateutil
 twine
+types-python-dateutil
 wheel
 makefilemenu

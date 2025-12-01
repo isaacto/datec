@@ -6,7 +6,7 @@ import datetime
 import datec
 
 
-def main():
+def main() -> None:
     dt = datetime.datetime.now()
     for cmd in sys.argv[1:]:
         if cmd == '-h':
