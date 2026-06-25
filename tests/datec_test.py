@@ -85,6 +85,24 @@ class DatecTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             dt + datec.PartialDate(1, month=2, day=30)
 
+    def test_partialdate_zero(self):
+        dt = datetime.datetime(2019, 5, 15, 8, 15)
+        self.assertEqual(dt + datec.PartialDate(0, hour=12, zero=True),
+                         datetime.datetime(2019, 5, 15, 12, 0, 0))
+        self.assertEqual(dt + datec.PartialDate(0, minute=30, zero=True),
+                         datetime.datetime(2019, 5, 15, 8, 30, 0))
+        self.assertEqual(dt + datec.parse('12::/'),
+                         datetime.datetime(2019, 5, 15, 12, 0, 0))
+        self.assertEqual(dt + datec.parse('12:30:/'),
+                         datetime.datetime(2019, 5, 15, 12, 30, 0))
+        self.assertEqual(dt + datec.parse('2020-03-15/'),
+                         datetime.datetime(2020, 3, 15, 0, 0, 0))
+        # without zero, minute/second are unchanged
+        self.assertEqual(dt + datec.PartialDate(0, hour=12),
+                         datetime.datetime(2019, 5, 15, 12, 15))
+        self.assertEqual(dt + datec.parse('12::'),
+                         datetime.datetime(2019, 5, 15, 12, 15))
+
     def test_validation(self):
         with self.assertRaises(ValueError):
             datec.Period(1, 'invalid')

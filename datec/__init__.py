@@ -46,6 +46,11 @@ They are represented by either a Weekday object or a PartialDate
 object with a count.  A count of 0 means setting instead of shifting.
 Only integer counts are acceptable.
 
+A trailing "/" on a partial date command sets all fields after the
+last specified field to zero.  For example, `12::/` sets the hour to
+12 and the minute, second and microsecond to 0, whereas `12::` would
+leave those unchanged.
+
 It is an error to set to an invalid date (e.g., --31 applied on
 2019-06-25 is an error).  The datetime parts which are specified must
 be consecutive (it is an error to specify 12::05).  It is also an
@@ -246,14 +251,15 @@ class PartialDate:
 
     Args:
 
-        count (int): The number of periods to shift
-        year (int): The year number
-        month (int): The month number (1 to 12)
-        day (int): The day number (1 to 31)
-        hour (int): The hour number (0 to 23)
-        minute (int): The minute number (0 to 59)
-        second (int or float): The second number (0 to smaller than 60)
-        microsecond (int): The microsecond number (0 to 999999)
+        count: The number of periods to shift
+        year: The year number
+        month: The month number (1 to 12)
+        day: The day number (1 to 31)
+        hour: The hour number (0 to 23)
+        minute: The minute number (0 to 59)
+        second: The second number (0 to smaller than 60)
+        microsecond: The microsecond number (0 to 999999)
+        zero: Whether to zero out the fields after the last specified one
 
     """
 
@@ -263,20 +269,26 @@ class PartialDate:
         self, count: int = 0, year: typing.Optional[int] = None,
         month: typing.Optional[int] = None, day: typing.Optional[int] = None,
         hour: typing.Optional[int] = None, minute: typing.Optional[int] = None,
-        second: typing.Optional[int] = None,
-        microsecond: typing.Optional[int] = None
+        second: typing.Optional[typing.Union[int, float]] = None,
+        microsecond: typing.Optional[int] = None,
+        zero: bool = False
     ):
         if count and year:
             raise ValueError('Absolute date with non-zero count')
         if isinstance(second, float) and microsecond is not None:
             raise ValueError('Doubly specified microsecond')
+        if isinstance(second, float):
+            second, orig_second = int(second), second
+            microsecond = int((orig_second - second) * 1000000 + 0.5)
         vals = [year, month, day, hour, minute, second, microsecond]
         sig = ''.join([("0" if v is None else "1") for v in vals])
         if self._INVALID_SIG_RE.search(sig):
             raise ValueError('Non-consecutive components')
-        if isinstance(second, float):
-            second, orig_second = int(second), second
-            microsecond = int((orig_second - second) * 1000000 + 0.5)
+        if zero:
+            lastset = sig.rfind('1')
+            for i in range(lastset + 1, 7):
+                vals[i] = 0
+            year, month, day, hour, minute, second, microsecond = vals
         self._count = count
         self._year = year
         self._month = month
@@ -417,13 +429,17 @@ class PartialDate:
         empty string.  If all date parts are not specified the "--T"
         may be omitted.  If all the time parts are not specified the
         "T::." may be omitted.  If the microsecond part is not
-        specified the "." part may be omitted.
+        specified the "." part may be omitted.  A trailing "/" causes
+        all fields after the last specified field to be set to 0.
 
         Args:
 
             cmdstr (str): The command string
 
         """
+        zero = cmdstr.endswith('/')
+        if zero:
+            cmdstr = cmdstr[:-1]
         match = cls.PARSE_RE1.match(cmdstr.lower())
         if not match:
             match = cls.PARSE_RE2.match(cmdstr)
@@ -448,7 +464,8 @@ class PartialDate:
                    _matchval('hour'),
                    _matchval('minute'),
                    _matchval('second'),
-                   microsecond)
+                   microsecond,
+                   zero)
 
 
 def parse(cmdstr: str) -> typing.Union[Period, Weekday, PartialDate]:

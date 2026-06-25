@@ -54,6 +54,11 @@ They are represented by either a Weekday object or a PartialDate
 object with a count.  A count of 0 means setting instead of shifting.
 Only integer counts are acceptable.
 
+A trailing "/" on a partial date command sets all fields after the
+last specified field to zero.  For example, `12::/` sets the hour to
+12 and the minute, second and microsecond to 0, whereas `12::` would
+leave those unchanged.
+
 It is an error to set to an invalid date (e.g., --31 applied on
 2019-06-25 is an error).  The datetime parts which are specified must
 be consecutive (it is an error to specify 12::05).  It is also an
