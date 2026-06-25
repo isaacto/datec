@@ -16,15 +16,16 @@ to them, like this:
 A date command can be parsed from strings using the parse() function,
 which create a command from a string representation.  This forms the
 basis of the datec command, which is a command-line program to output
-datetime after applying date commands.  In general the date
-representation is NxYYYY-mm-ddTHH:MM:SS.ffffff, where unspecified
-parts are omitted leaving the symbols intact, like "2x-2-29T3::." (see
-the following for the meaning).  If the fractional part is not
-specified the "." may be omitted, if all time parts are not specified
-the "T::."  can be omitted, if all date parts are not specified the
-"--T" can be omitted, and if Nx may be omitted in some cases for
-setting a partial datetime or weekday.  There are a couple other more
-formats like +3week and -2wed for shifting by period and weekday.
+datetime after applying date commands, or sleep until that time if
+"-w" is given.  In general the date representation is
+NxYYYY-mm-ddTHH:MM:SS.ffffff, where unspecified parts are omitted
+leaving the symbols intact, like "2x-2-29T3::." (see the following for
+the meaning).  If the fractional part is not specified the "." may be
+omitted, if all time parts are not specified the "T::."  can be
+omitted, if all date parts are not specified the "--T" can be omitted,
+and if Nx may be omitted in some cases for setting a partial datetime
+or weekday.  There are a couple other more formats like +3week and
+-2wed for shifting by period and weekday.
 
 Date commands are in two forms: period shifting commands and partial
 datetime shifting commands.  The first type is more familiar: they
@@ -75,6 +76,9 @@ Shifting to an invalid date by a partial date with just a month number
 will cause the date to moved backwards until the date is valid.  E.g.,
 if you shift by -6- with count 1 (next June) from 2019-05-31, you get
 2019-06-30.  With count 2 you get 2020-06-30.
+
+All these functionalities are available in the constructors too.  Read
+their docstring to find how to use them.
 
 This library is grown out of frustration that it is tedious to have a
 shell script or program to get a datetime like "the next 6pm from now"
