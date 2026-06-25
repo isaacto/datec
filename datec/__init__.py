@@ -92,7 +92,7 @@ import typing
 import dateutil.relativedelta as dr
 
 
-__version__ = '0.2'
+__version__ = '0.3'
 
 class ParseError(ValueError):
     """Represent an error in parsing."""
