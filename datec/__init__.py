@@ -79,6 +79,7 @@ is observed.  Contributions are welcome.
 
 """
 
+import contextlib
 import datetime
 import re
 import typing
@@ -111,7 +112,9 @@ class Period:
     def __init__(self, count: float, period: str):
         if period not in ('year', 'month', 'week', 'day',
                           'hour', 'minute', 'second'):
-            raise ValueError('Invalid period: %s' % period)
+            raise ValueError(f'Invalid period: {period}')
+        if period in ('year', 'month') and count != int(count):
+            raise ValueError(f'Invalid count {count} for period {period}')
         self._count = count
         self._period = period
 
@@ -144,11 +147,12 @@ class Period:
             raise ParseError('Cannot parse string %s' % cmdstr)
         gdt = match.groupdict()
         cnt: float
+        with contextlib.suppress(ValueError):
+            return cls(int(gdt['count']), gdt['period'])
         try:
-            cnt = int(gdt['count'])
-        except Exception:
-            cnt = float(gdt['count'])
-        return cls(cnt, gdt['period'])
+            return cls(float(gdt['count']), gdt['period'])
+        except ValueError as err:
+            raise ParseError('Cannot parse string %s' % cmdstr)
 
 
 _WEEKDAY_CLS = [dr.SU, dr.MO, dr.TU, dr.WE, dr.TH, dr.FR, dr.SA]
@@ -196,7 +200,7 @@ class Weekday:
 
     PARSE_RE = re.compile(r'''
     ^
-    (?P<count> [+-] (?: [0-9]+ | [0-9]*\.[0-9]*) )?
+    (?P<count> [+-] (?: [0-9]+) )?
     (?P<weekday> sun|mon|tue|wed|thu|fri|sat)
     $
     ''', re.X)

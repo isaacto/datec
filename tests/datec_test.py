@@ -13,6 +13,8 @@ class DatecTest(unittest.TestCase):
                          datetime.datetime(2019, 5, 15, 0, 0, 1, 500000))
         with self.assertRaises(datec.ParseError):
             datec.Period.parse('+1mon')
+        with self.assertRaises(datec.ParseError):
+            datec.Period.parse('+.day')
 
     def test_weekday(self):
         dt = datetime.datetime(2019, 5, 15)
@@ -86,6 +88,8 @@ class DatecTest(unittest.TestCase):
     def test_validation(self):
         with self.assertRaises(ValueError):
             datec.Period(1, 'invalid')
+        with self.assertRaises(ValueError):
+            datec.Period(1.5, 'month')
         with self.assertRaises(ValueError):
             datec.Weekday(1, 7)
         with self.assertRaises(ValueError):
