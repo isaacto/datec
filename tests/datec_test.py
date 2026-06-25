@@ -41,6 +41,8 @@ class DatecTest(unittest.TestCase):
                          datetime.datetime(2019, 5, 15, 8, 17, 16))
         self.assertEqual(dt + datec.PartialDate(2, minute=7, second=16),
                          datetime.datetime(2019, 5, 15, 10, 7, 16))
+        self.assertEqual(dt + datec.PartialDate(2, minute=7, second=16.5),
+                         datetime.datetime(2019, 5, 15, 10, 7, 16, 500000))
         self.assertEqual(dt + datec.PartialDate.parse(':7:16'),
                          datetime.datetime(2019, 5, 15, 8, 7, 16))
         self.assertEqual(dt + datec.PartialDate.parse('-1x:7:16'),
@@ -80,3 +82,15 @@ class DatecTest(unittest.TestCase):
                          datetime.datetime(2019, 3, 30))
         with self.assertRaises(ValueError):
             dt + datec.PartialDate(1, month=2, day=30)
+
+    def test_validation(self):
+        with self.assertRaises(ValueError):
+            datec.Period(1, 'invalid')
+        with self.assertRaises(ValueError):
+            datec.Weekday(1, 7)
+        with self.assertRaises(ValueError):
+            datec.PartialDate(1, year=2020)
+        with self.assertRaises(ValueError):
+            datec.PartialDate(second=1.5, microsecond=500)
+        with self.assertRaises(ValueError):
+            datec.PartialDate(hour=12, second=30)

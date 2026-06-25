@@ -109,8 +109,9 @@ class Period:
 
     """
     def __init__(self, count: float, period: str):
-        assert period in ('year', 'month', 'week', 'day',
-                          'hour', 'minute', 'second')
+        if period not in ('year', 'month', 'week', 'day',
+                          'hour', 'minute', 'second'):
+            raise ValueError('Invalid period: %s' % period)
         self._count = count
         self._period = period
 
@@ -176,7 +177,8 @@ class Weekday:
     """
     def __init__(self, count: int, day: int):
         self._count = count
-        assert day in range(7)
+        if day not in range(7):
+            raise ValueError('Invalid weekday: %d' % day)
         self._day = day
         self._drcls = _WEEKDAY_CLS[day]
 
@@ -260,13 +262,14 @@ class PartialDate:
         second: typing.Optional[int] = None,
         microsecond: typing.Optional[int] = None
     ):
-        assert not count or not year, 'Absolute date with non-zero count'
-        assert not isinstance(second, float) or \
-            microsecond is None, 'Doubly specified microsecond'
+        if count and year:
+            raise ValueError('Absolute date with non-zero count')
+        if isinstance(second, float) and microsecond is not None:
+            raise ValueError('Doubly specified microsecond')
         vals = [year, month, day, hour, minute, second, microsecond]
         sig = ''.join([("0" if v is None else "1") for v in vals])
-        assert not self._INVALID_SIG_RE.search(sig), \
-            'Non-consecutive components'
+        if self._INVALID_SIG_RE.search(sig):
+            raise ValueError('Non-consecutive components')
         if isinstance(second, float):
             second, orig_second = int(second), second
             microsecond = int((orig_second - second) * 1000000 + 0.5)
