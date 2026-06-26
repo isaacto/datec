@@ -389,7 +389,7 @@ class PartialDate:
 
     PARSE_RE1 = re.compile(r'''
     ^
-    (?: (?P<count> [+-] (?: [0-9]+ | [0-9]*\.[0-9]*) ) x)?
+    (?: (?P<count> [+-]? (?: [0-9]+ | [0-9]*\.[0-9]*) ) x)?
     (?P<year> [0-9]*)
     -
     (?P<month> [0-9]*)
@@ -442,7 +442,7 @@ class PartialDate:
             cmdstr = cmdstr[:-1]
         match = cls.PARSE_RE1.match(cmdstr.lower())
         if not match:
-            match = cls.PARSE_RE2.match(cmdstr)
+            match = cls.PARSE_RE2.match(cmdstr.lower())
         if not match:
             raise ParseError('Cannot parse string %s' % cmdstr)
         gdt = match.groupdict()

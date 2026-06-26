@@ -35,7 +35,7 @@ until the ending datetime.
         if cmd == '-w':
             wait = True
             continue
-        dt = dt + datec.parse(cmd.lower())
+        dt = dt + datec.parse(cmd)
     if wait:
         delta = (dt - datetime.datetime.now()).total_seconds()
         if delta > 0:

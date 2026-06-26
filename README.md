@@ -77,9 +77,6 @@ will cause the date to moved backwards until the date is valid.  E.g.,
 if you shift by -6- with count 1 (next June) from 2019-05-31, you get
 2019-06-30.  With count 2 you get 2020-06-30.
 
-All these functionalities are available in the constructors too.  Read
-their docstring to find how to use them.
-
 This library is grown out of frustration that it is tedious to have a
 shell script or program to get a datetime like "the next 6pm from now"
 or "the next 3rd of any month from two days ago".  With this module
