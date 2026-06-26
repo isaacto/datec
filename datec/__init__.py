@@ -127,6 +127,10 @@ class Period:
         return dt + dr.relativedelta(
             **{self._period + 's': self._count})  # type: ignore
 
+    def __rsub__(self, dt: datetime.datetime) -> datetime.datetime:
+        return dt + dr.relativedelta(
+            **{self._period + 's': -self._count})  # type: ignore
+
     PARSE_RE = re.compile(r'''
     ^
     (?P<count> [+-]? (?: [0-9]+ | [0-9]*\.[0-9]*) )
@@ -193,12 +197,19 @@ class Weekday:
         self._drcls = _WEEKDAY_CLS[day]
 
     def __radd__(self, dt: datetime.datetime) -> datetime.datetime:
-        if self._count > 0:
+        return self._radd_core(self._count, dt)
+
+    def __rsub__(self, dt: datetime.datetime) -> datetime.datetime:
+        return self._radd_core(-self._count, dt)
+
+    def _radd_core(self, count: int,
+                   dt: datetime.datetime) -> datetime.datetime:
+        if count > 0:
             return dt + dr.relativedelta(
-                days=1, weekday=self._drcls(self._count))
-        if self._count < 0:
+                days=1, weekday=self._drcls(count))
+        if count < 0:
             return dt + dr.relativedelta(
-                days=-1, weekday=self._drcls(self._count))
+                days=-1, weekday=self._drcls(count))
         dow = (dt.weekday() + 1) % 7
         if self._day < dow:
             return dt + dr.relativedelta(weekday=self._drcls(-1))
@@ -305,18 +316,25 @@ class PartialDate:
     ]
 
     def __radd__(self, dt: datetime.datetime) -> datetime.datetime:
+        return self._radd_core(self._count, dt)
+
+    def __rsub__(self, dt: datetime.datetime) -> datetime.datetime:
+        return self._radd_core(-self._count, dt)
+
+    def _radd_core(self, count: int,
+                   dt: datetime.datetime) -> datetime.datetime:
         if self._firstset == -1:
             return dt
-        if not(self._count):
+        if not(count):
             return self._rset(dt)
         # modify day or finer, or day specified and is not vulnerable
         # to variable month length
         if self._firstset > 2 or \
            (self._day is not None and self._day <= 28):
-            return self._simpleshift(dt)
+            return self._simpleshift(count, dt)
         if self._day is None:
-            return self._monthshift(dt)
-        return self._dayshift(dt)
+            return self._monthshift(count, dt)
+        return self._dayshift(count, dt)
 
     def _rset(self, dt: datetime.datetime) -> datetime.datetime:
         updater = {'year': self._year,
@@ -329,27 +347,27 @@ class PartialDate:
         updater = {k: v for k, v in updater.items() if v is not None}
         return dt.replace(**updater)  # type: ignore
 
-    def _simpleshift(self, dt: datetime.datetime) -> datetime.datetime:
-        remain = self._count
+    def _simpleshift(
+            self, count: int, dt: datetime.datetime) -> datetime.datetime:
         ret = self._rset(dt)
-        if self._count < 0:
+        if count < 0:
             if ret < dt:
-                remain += 1
+                count += 1
         else:
             if ret > dt:
-                remain -= 1
+                count -= 1
         mod_field = self._FIRSTSET_MOD[self._firstset]
-        return ret + dr.relativedelta(**{mod_field: remain})  # type: ignore
+        return ret + dr.relativedelta(**{mod_field: count})  # type: ignore
 
-    def _dayshift(self, dt: datetime.datetime) -> datetime.datetime:
+    def _dayshift(self, count: int, dt: datetime.datetime) -> datetime.datetime:
         # Day specified
         if self._firstset == 2:  # modify month
-            shift = dr.relativedelta(months=1 if self._count > 0 else -1)
+            shift = dr.relativedelta(months=1 if count > 0 else -1)
             limit = 2  # Must be able to find a 31st day in 2 months
         else:
-            shift = dr.relativedelta(years=1 if self._count > 0 else -1)
+            shift = dr.relativedelta(years=1 if count > 0 else -1)
             limit = 8  # Must be able to find a Feb 29 in 8 years
-        count = abs(self._count)
+        abs_count = abs(count)
         # Find first date
         curr = dt
         for _ in range(limit):
@@ -358,26 +376,27 @@ class PartialDate:
             except ValueError:
                 curr += shift
                 continue
-            if (self._count > 0) == (ret > dt):
-                count -= 1
+            if (count > 0) == (ret > dt):
+                abs_count -= 1
             break
         else:
             raise ValueError('Failed day shifting: invalid date?')
         # Find count occurrences
         while True:
-            if count == 0:
+            if abs_count == 0:
                 return ret
             ret += shift
             try:
                 ret = self._rset(ret)
             except ValueError:
                 continue
-            count -= 1
+            abs_count -= 1
 
-    def _monthshift(self, dt: datetime.datetime) -> datetime.datetime:
+    def _monthshift(
+            self, count: int, dt: datetime.datetime) -> datetime.datetime:
         # Only month specified, shift by month rather than by year
         assert self._month is not None
-        if self._count > 0:
+        if count > 0:
             num_months = self._month - dt.month
             sign = 1
         else:
@@ -385,7 +404,7 @@ class PartialDate:
             sign = -1
         if num_months <= 0:
             num_months += 12
-        num_months += (abs(self._count) - 1) * 12
+        num_months += (abs(count) - 1) * 12
         return dt + dr.relativedelta(months=sign * num_months)
 
     PARSE_RE1 = re.compile(r'''

@@ -9,6 +9,8 @@ class DatecTest(unittest.TestCase):
         dt = datetime.datetime(2019, 5, 15)
         self.assertEqual(dt + datec.Period(1, 'month'),
                          datetime.datetime(2019, 6, 15))
+        self.assertEqual(dt - datec.Period(1, 'month'),
+                         datetime.datetime(2019, 4, 15))
         self.assertEqual(dt + datec.parse('+1.5second'),
                          datetime.datetime(2019, 5, 15, 0, 0, 1, 500000))
         with self.assertRaises(datec.ParseError):
@@ -20,6 +22,8 @@ class DatecTest(unittest.TestCase):
         dt = datetime.datetime(2019, 5, 15)
         self.assertEqual(dt + datec.Weekday(1, datec.MON),
                          datetime.datetime(2019, 5, 20))
+        self.assertEqual(dt - datec.Weekday(1, datec.MON),
+                         datetime.datetime(2019, 5, 13))
         self.assertEqual(dt + datec.Weekday.parse('+2mon'),
                          datetime.datetime(2019, 5, 27))
         self.assertEqual(dt + datec.Weekday.parse('-2WED'),
@@ -39,6 +43,8 @@ class DatecTest(unittest.TestCase):
                          datetime.datetime(2019, 5, 15, 8, 7, 16))
         self.assertEqual(dt + datec.PartialDate(1, minute=7, second=16),
                          datetime.datetime(2019, 5, 15, 9, 7, 16))
+        self.assertEqual(dt - datec.PartialDate(1, minute=7, second=16),
+                         datetime.datetime(2019, 5, 15, 8, 7, 16))
         self.assertEqual(dt + datec.PartialDate(1, minute=17, second=16),
                          datetime.datetime(2019, 5, 15, 8, 17, 16))
         self.assertEqual(dt + datec.PartialDate(2, minute=7, second=16),

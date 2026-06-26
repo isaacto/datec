@@ -13,6 +13,12 @@ to them, like this:
 
     datetime.datetime.now() + datec.Period(2, 'week')
 
+Subtraction is also supported, so that the following two computations
+are equivalent.
+
+    datetime.datetime.now() + datec.Period(-2, 'week')
+    datetime.datetime.now() - datec.Period(2, 'week')
+
 A date command can be parsed from strings using the parse() function,
 which create a command from a string representation.  This forms the
 basis of the datec command, which is a command-line program to output
