@@ -129,7 +129,7 @@ class Period:
 
     PARSE_RE = re.compile(r'''
     ^
-    (?P<count> [+-] (?: [0-9]+ | [0-9]*\.[0-9]*) )
+    (?P<count> [+-]? (?: [0-9]+ | [0-9]*\.[0-9]*) )
     (?P<period> year|month|week|day|hour|minute|second)
     $
     ''', re.X)
@@ -139,8 +139,9 @@ class Period:
         """Parse a command string to a Period object
 
         The command string should be of the form "<N><period>", where
-        <N> is an explicitly signed number, and <period> is a period
-        string (case insensitive).
+        <N> is a number, and <period> is a period string (case
+        insensitive).  Fractional count is supported except for month
+        and year.
 
         Args:
 
@@ -205,7 +206,7 @@ class Weekday:
 
     PARSE_RE = re.compile(r'''
     ^
-    (?P<count> [+-] (?: [0-9]+) )?
+    (?P<count> [+-]? (?: [0-9]+) )?
     (?P<weekday> sun|mon|tue|wed|thu|fri|sat)
     $
     ''', re.X)
@@ -215,9 +216,9 @@ class Weekday:
         """Parse a command string to a Weekday object
 
         The command string should be of the form "<N><weekday>", where
-        <N> is an explicitly signed number or empty string
-        (representing 0), and <weekday> is a weekday 3-letter string
-        like sun, mon, etc (case insensitive).
+        <N> is an integer or the empty string (representing 0), and
+        <weekday> is a weekday 3-letter string like sun, mon, etc (case
+        insensitive).
 
         Args:
 
@@ -400,7 +401,7 @@ class PartialDate:
 
     PARSE_RE2 = re.compile(r'''
     ^
-    (?: (?P<count> [+-] (?: [0-9]+ | [0-9]*\.[0-9]*) ) x)?
+    (?: (?P<count> [+-]? (?: [0-9]+ | [0-9]*\.[0-9]*) ) x)?
     (?:
       (?P<year> [0-9]*)
       -
@@ -424,13 +425,13 @@ class PartialDate:
 
         The command string should be of the form
         "<N>x<year>-<month>-<day>T<hour>:<minute>:<second>.<micro>",
-        where <N> is an explicitly signed number or empty string
-        (representing 0).  To skip the specification of a part use
-        empty string.  If all date parts are not specified the "--T"
-        may be omitted.  If all the time parts are not specified the
-        "T::." may be omitted.  If the microsecond part is not
-        specified the "." part may be omitted.  A trailing "/" causes
-        all fields after the last specified field to be set to 0.
+        where <N> is an integer or the empty string (representing 0).
+        To skip the specification of a part use empty string.  If all
+        date parts are not specified the "--T" may be omitted.  If all
+        the time parts are not specified the "T::." may be omitted.
+        If the microsecond part is not specified the "." part may be
+        omitted.  A trailing "/" causes all fields after the last
+        specified field to be set to 0.
 
         Args:
 
