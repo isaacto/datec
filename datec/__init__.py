@@ -47,9 +47,10 @@ object with a count.  A count of 0 means setting instead of shifting.
 Only integer counts are acceptable.
 
 A trailing "/" on a partial date command sets all fields after the
-last specified field to zero.  For example, `12::/` sets the hour to
-12 and the minute, second and microsecond to 0, whereas `12::` would
-leave those unchanged.
+last specified field to zero.  For month and year they are set to 1
+instead.  For example, `12::/` sets the hour to 12 and the minute,
+second and microsecond to 0, whereas `12::` would leave those
+unchanged.
 
 It is an error to set to an invalid date (e.g., --31 applied on
 2019-06-25 is an error).  The datetime parts which are specified must
@@ -272,6 +273,7 @@ class PartialDate:
         second: The second number (0 to smaller than 60)
         microsecond: The microsecond number (0 to 999999)
         zero: Whether to zero out the fields after the last specified one
+            (or "one out" for month and year)
 
     """
 
@@ -299,7 +301,7 @@ class PartialDate:
         if zero:
             lastset = sig.rfind('1')
             for i in range(lastset + 1, 7):
-                vals[i] = 0
+                vals[i] = 0 if i >= 3 else 1
             year, month, day, hour, minute, second, microsecond = vals
         self._count = count
         self._year = year

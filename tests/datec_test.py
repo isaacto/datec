@@ -103,6 +103,8 @@ class DatecTest(unittest.TestCase):
                          datetime.datetime(2019, 5, 15, 12, 30, 0))
         self.assertEqual(dt + datec.parse('2020-03-15/'),
                          datetime.datetime(2020, 3, 15, 0, 0, 0))
+        self.assertEqual(dt + datec.parse('2020-03-/'),
+                         datetime.datetime(2020, 3, 1, 0, 0, 0))
         # without zero, minute/second are unchanged
         self.assertEqual(dt + datec.PartialDate(0, hour=12),
                          datetime.datetime(2019, 5, 15, 12, 15))
